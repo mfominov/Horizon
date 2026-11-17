@@ -257,13 +257,51 @@ class AIConfig(BaseModel):
 class GitHubSourceConfig(BaseModel):
     """GitHub source configuration."""
 
-    type: str  # "user_events", "repo_releases", etc.
+    type: str  # "user_events", "repo_releases", "personalized_discovery"
     username: Optional[str] = None
     owner: Optional[str] = None
     repo: Optional[str] = None
     enabled: bool = True
     category: Optional[str] = None
     profile: ProfileRoute = None
+    token_env: str = Field(
+        default="GITHUB_TOKEN",
+        pattern=r"^[A-Za-z_][A-Za-z0-9_]*$",
+    )
+    seed_sources: List[Literal["watched", "starred"]] = Field(
+        default_factory=lambda: ["watched", "starred"]
+    )
+    max_watched_seeds: int = Field(default=100, ge=0, le=1000)
+    max_starred_seeds: int = Field(default=200, ge=0, le=1000)
+    active_within_days: int = Field(default=180, ge=1, le=3650)
+    max_search_queries: int = Field(default=6, ge=1, le=10)
+    max_candidates: int = Field(default=40, ge=1, le=100)
+    min_stars: int = Field(default=50, ge=0)
+    exclude_forks: bool = True
+    exclude_archived: bool = True
+    fan_out_profiles: bool = False
+
+    @model_validator(mode="after")
+    def validate_personalized_discovery(self) -> "GitHubSourceConfig":
+        if self.type != "personalized_discovery":
+            return self
+        if not self.seed_sources:
+            raise ValueError("personalized_discovery requires at least one seed source")
+        if "watched" in self.seed_sources and self.max_watched_seeds == 0:
+            raise ValueError("watched seed source requires max_watched_seeds > 0")
+        if "starred" in self.seed_sources and self.max_starred_seeds == 0:
+            raise ValueError("starred seed source requires max_starred_seeds > 0")
+        if self.fan_out_profiles:
+            if not isinstance(self.profile, list) or len(self.profile) < 2:
+                raise ValueError(
+                    "fan_out_profiles requires at least two profile IDs"
+                )
+            normalized = [profile_id.strip() for profile_id in self.profile]
+            if any(not profile_id for profile_id in normalized):
+                raise ValueError("fan-out profile IDs must be non-empty")
+            if len(normalized) != len(set(normalized)):
+                raise ValueError("fan-out profile IDs must be unique")
+        return self
 
 
 class HackerNewsConfig(BaseModel):

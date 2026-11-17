@@ -416,6 +416,61 @@ for validation and fallback rules.
 }
 ```
 
+#### Personalized GitHub discovery
+
+`personalized_discovery` builds a bounded public-repository search from the
+repositories watched and starred by the authenticated GitHub user. Watched
+repositories have three times the seed weight of starred repositories. Horizon
+extracts their topics and primary languages, runs at most
+`max_search_queries` deterministic repository searches, excludes the seed
+repositories themselves, and routes the resulting candidates through the normal
+profile pipeline.
+
+```json
+{
+  "sources": {
+    "github": [
+      {
+        "type": "personalized_discovery",
+        "enabled": true,
+        "token_env": "GITHUB_TOKEN",
+        "seed_sources": ["watched", "starred"],
+        "max_watched_seeds": 100,
+        "max_starred_seeds": 200,
+        "active_within_days": 180,
+        "max_search_queries": 6,
+        "max_candidates": 20,
+        "min_stars": 50,
+        "exclude_forks": true,
+        "exclude_archived": true,
+        "fan_out_profiles": true,
+        "category": "github-discovery",
+        "profile": ["work-radar", "personal-radar"]
+      }
+    ]
+  }
+}
+```
+
+The source requires the environment variable named by `token_env`. For a
+fine-grained personal access token, grant read-only `Watching` and `Starring`
+user permissions. Horizon never changes stars or repository subscriptions.
+Private repositories are ignored even when the token can read them, so their
+names and topics cannot flow into a published digest or a search query.
+
+- `seed_sources` — any non-empty combination of `watched` and `starred`
+- `max_watched_seeds` / `max_starred_seeds` — hard caps on seed pagination
+- `active_within_days` — maximum activity lookback; the run's collection
+  window can make it narrower
+- `max_search_queries` — hard-capped at `10`; one query per strongest topic,
+  then language when topic signals are insufficient
+- `max_candidates` — maximum repositories emitted into the radar pipeline
+- `min_stars` — minimum candidate star count
+- `exclude_forks` / `exclude_archived` — search and response-side filters
+- `fan_out_profiles` — when `true`, emit one independent item per configured
+  profile instead of asking the classifier to choose one; API searches are not
+  repeated
+
 ### Hacker News
 
 ```json

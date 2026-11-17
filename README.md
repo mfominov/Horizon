@@ -315,7 +315,7 @@ Schedule Horizon with **GitHub Actions** using the [daily workflow template](.gi
 | **Reddit** | Subreddits + user posts | Yes (top N comments) |
 | **Telegram** | Public channels, or channels/groups visible to an authenticated user | — |
 | **Twitter / X** | User timelines + keyword searches (Apify) | Yes (top N replies) |
-| **GitHub** | User events & repo releases | — |
+| **GitHub** | User events, releases, and watched/starred-based repository discovery | — |
 | **OpenBB** | Financial company news by watchlist/provider | — |
 | **OSS Insight** | Trending open-source repositories | — |
 | **GDELT** | News matching a search query | — |
