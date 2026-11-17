@@ -1,11 +1,16 @@
-# Use Python 3.11 slim image
-FROM python:3.11-slim
+# Track Python 3.13 security patch releases on the stable Trixie base.
+FROM python:3.13-slim-trixie
 
 # Set working directory
 WORKDIR /app
 
+# Apply fixes published after the base-image layer was built.
+RUN apt-get update \
+    && apt-get upgrade -y \
+    && rm -rf /var/lib/apt/lists/*
+
 # Install uv for faster dependency management
-COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
+COPY --from=ghcr.io/astral-sh/uv:0.13.8 /uv /usr/local/bin/uv
 
 # Copy project files
 COPY pyproject.toml uv.lock README.md ./

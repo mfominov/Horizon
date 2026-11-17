@@ -1,0 +1,3 @@
+# Upstream test fixtures containing intentionally fake MiniMax keys.
+af8a08f47e88db5ac74f6142a9423a98007f4c35:tests/test_minimax_client.py:generic-api-key:41
+af8a08f47e88db5ac74f6142a9423a98007f4c35:tests/test_minimax_client.py:generic-api-key:54
