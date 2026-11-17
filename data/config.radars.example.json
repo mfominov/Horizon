@@ -88,7 +88,11 @@
       }
     ],
     "hackernews": {
-      "enabled": false
+      "enabled": true,
+      "fetch_top_stories": 30,
+      "min_score": 50,
+      "category": "engineering-news",
+      "profile": ["work-radar", "personal-radar"]
     },
     "rss": [
       {
@@ -118,11 +122,50 @@
         "enabled": true,
         "category": "self-hosting",
         "profile": "personal-radar"
+      },
+      {
+        "name": "CNCF Blog",
+        "url": "https://www.cncf.io/feed/",
+        "enabled": true,
+        "category": "cloud-native",
+        "profile": ["work-radar", "personal-radar"]
+      },
+      {
+        "name": "Grafana Labs Blog",
+        "url": "https://grafana.com/blog/index.xml",
+        "enabled": true,
+        "category": "observability",
+        "profile": ["work-radar", "personal-radar"]
+      },
+      {
+        "name": "Cloudflare Blog",
+        "url": "https://blog.cloudflare.com/rss/",
+        "enabled": true,
+        "category": "infrastructure",
+        "profile": ["work-radar", "personal-radar"]
       }
     ],
     "reddit": {
-      "enabled": false,
-      "subreddits": [],
+      "enabled": true,
+      "request_delay_sec": 5.0,
+      "subreddits": [
+        {
+          "subreddit": "devops",
+          "sort": "new",
+          "fetch_limit": 5,
+          "min_score": 0,
+          "category": "devops",
+          "profile": ["work-radar", "personal-radar"]
+        },
+        {
+          "subreddit": "selfhosted",
+          "sort": "new",
+          "fetch_limit": 5,
+          "min_score": 0,
+          "category": "self-hosting",
+          "profile": ["work-radar", "personal-radar"]
+        }
+      ],
       "users": [],
       "fetch_comments": 0
     },
@@ -145,8 +188,31 @@
         }
       ]
     },
+    "telegram_user": {
+      "enabled": false,
+      "api_id_env": "TELEGRAM_API_ID",
+      "api_hash_env": "TELEGRAM_API_HASH",
+      "session_path": "data/telegram_user.session",
+      "channels": []
+    },
     "ossinsight": {
-      "enabled": false
+      "enabled": true,
+      "period": "past_24_hours",
+      "languages": ["All", "Go", "Python", "TypeScript"],
+      "keywords": ["platform", "kubernetes", "observability", "sre", "self-hosted", "devops"],
+      "min_stars": 10,
+      "max_items": 20,
+      "category": "oss-trending",
+      "profile": ["work-radar", "personal-radar"]
+    },
+    "google_news": {
+      "enabled": true,
+      "query": "(\"platform engineering\" OR SRE OR Kubernetes OR \"self-hosted\")",
+      "language": "en",
+      "country": "US",
+      "max_results": 25,
+      "category": "industry-news",
+      "profile": ["work-radar", "personal-radar"]
     }
   },
   "collection": {

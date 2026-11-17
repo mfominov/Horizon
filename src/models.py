@@ -15,6 +15,7 @@ class SourceType(str, Enum):
     RSS = "rss"
     REDDIT = "reddit"
     TELEGRAM = "telegram"
+    TELEGRAM_USER = "telegram_user"
     TWITTER = "twitter"
     OPENBB = "openbb"
     OSSINSIGHT = "ossinsight"
@@ -34,8 +35,13 @@ SOURCE_REGISTRY = {
     SourceType.GITHUB.value: SourceDefinition("github", config_is_list=True),
     SourceType.HACKERNEWS.value: SourceDefinition("hackernews"),
     SourceType.RSS.value: SourceDefinition("rss", config_is_list=True),
-    SourceType.REDDIT.value: SourceDefinition("reddit", item_fields=("subreddits", "users")),
+    SourceType.REDDIT.value: SourceDefinition(
+        "reddit", item_fields=("subreddits", "users")
+    ),
     SourceType.TELEGRAM.value: SourceDefinition("telegram", item_fields=("channels",)),
+    SourceType.TELEGRAM_USER.value: SourceDefinition(
+        "telegram_user", item_fields=("channels",)
+    ),
     SourceType.TWITTER.value: SourceDefinition("twitter", item_fields=("users", "keywords")),
     SourceType.OPENBB.value: SourceDefinition("openbb", item_fields=("watchlists",)),
     SourceType.OSSINSIGHT.value: SourceDefinition("ossinsight"),
@@ -355,6 +361,7 @@ class RedditConfig(BaseModel):
     subreddits: List[RedditSubredditConfig] = Field(default_factory=list)
     users: List[RedditUserConfig] = Field(default_factory=list)
     fetch_comments: int = 5  # top comments per post, 0 to disable
+    request_delay_sec: float = Field(default=2.0, ge=0.0, le=60.0)
 
 
 class TelegramChannelConfig(BaseModel):
@@ -372,6 +379,26 @@ class TelegramConfig(BaseModel):
 
     enabled: bool = True
     channels: List[TelegramChannelConfig] = Field(default_factory=list)
+
+
+class TelegramUserChannelConfig(BaseModel):
+    """A channel or group visible to an authenticated Telegram user."""
+
+    channel: Union[str, int]
+    enabled: bool = True
+    fetch_limit: int = Field(default=20, ge=1, le=1000)
+    category: Optional[str] = None
+    profile: ProfileRoute = None
+
+
+class TelegramUserConfig(BaseModel):
+    """Read-only Telegram MTProto source backed by a local user session."""
+
+    enabled: bool = False
+    api_id_env: str = "TELEGRAM_API_ID"
+    api_hash_env: str = "TELEGRAM_API_HASH"
+    session_path: str = "data/telegram_user.session"
+    channels: List[TelegramUserChannelConfig] = Field(default_factory=list)
 
 
 class TwitterConfig(BaseModel):
@@ -507,6 +534,7 @@ class SourcesConfig(BaseModel):
     rss: List[RSSSourceConfig] = Field(default_factory=list)
     reddit: RedditConfig = Field(default_factory=RedditConfig)
     telegram: TelegramConfig = Field(default_factory=TelegramConfig)
+    telegram_user: Optional[TelegramUserConfig] = None
     twitter: Optional[TwitterConfig] = None
     openbb: Optional[OpenBBConfig] = None
     ossinsight: OSSInsightConfig = Field(default_factory=OSSInsightConfig)

@@ -37,17 +37,29 @@ def test_every_experiment_source_is_routed_to_both_radars(monkeypatch):
 
     expected_profiles = {"work-radar", "personal-radar"}
 
+    def route_profiles(route):
+        return set(route) if isinstance(route, list) else {route}
+
     github_routes: dict[tuple[str, str], set[str]] = {}
     for source in config.sources.github:
         github_routes.setdefault((source.owner, source.repo), set()).add(source.profile)
 
     rss_routes: dict[str, set[str]] = {}
     for source in config.sources.rss:
-        rss_routes.setdefault(str(source.url), set()).add(source.profile)
+        rss_routes.setdefault(str(source.url), set()).update(
+            route_profiles(source.profile)
+        )
 
     telegram_routes: dict[str, set[str]] = {}
     for source in config.sources.telegram.channels:
-        telegram_routes.setdefault(source.channel, set()).add(source.profile)
+        telegram_routes.setdefault(source.channel, set()).update(
+            route_profiles(source.profile)
+        )
+
+    reddit_routes = {
+        source.subreddit: route_profiles(source.profile)
+        for source in config.sources.reddit.subreddits
+    }
 
     assert set(github_routes) == {
         ("deckhouse", "deckhouse"),
@@ -58,11 +70,19 @@ def test_every_experiment_source_is_routed_to_both_radars(monkeypatch):
     assert set(rss_routes) == {
         "https://kubernetes.io/feed.xml",
         "https://selfh.st/rss/",
+        "https://www.cncf.io/feed/",
+        "https://grafana.com/blog/index.xml",
+        "https://blog.cloudflare.com/rss/",
     }
     assert set(telegram_routes) == {"devops_fm"}
-    assert all(profiles == expected_profiles for profiles in github_routes.values())
-    assert all(profiles == expected_profiles for profiles in rss_routes.values())
-    assert all(profiles == expected_profiles for profiles in telegram_routes.values())
+    assert set(reddit_routes) == {"devops", "selfhosted"}
+    assert all(route == expected_profiles for route in github_routes.values())
+    assert all(route == expected_profiles for route in rss_routes.values())
+    assert all(route == expected_profiles for route in telegram_routes.values())
+    assert all(route == expected_profiles for route in reddit_routes.values())
+    assert route_profiles(config.sources.hackernews.profile) == expected_profiles
+    assert route_profiles(config.sources.ossinsight.profile) == expected_profiles
+    assert route_profiles(config.sources.google_news.profile) == expected_profiles
 
 
 def test_cross_source_dedup_keeps_same_url_for_independent_radars():

@@ -110,6 +110,13 @@ jobs:
           horizon:ci
           --help
 
+      - name: Telegram CLI smoke
+        run: >-
+          docker run --rm
+          --entrypoint /app/.venv/bin/horizon-telegram
+          horizon:ci
+          --help
+
       - name: Webhook dry-run smoke
         env:
           OPENROUTER_MODEL: openai/gpt-4.1-mini

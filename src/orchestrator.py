@@ -23,6 +23,7 @@ from .scrapers.hackernews import HackerNewsScraper
 from .scrapers.rss import RSSScraper
 from .scrapers.reddit import RedditScraper
 from .scrapers.telegram import TelegramScraper
+from .scrapers.telegram_user import TelegramUserScraper
 from .scrapers.twitter import TwitterScraper
 from .scrapers.twitter_playwright import TwitterPlaywrightScraper
 from .scrapers.openbb import OpenBBScraper
@@ -486,6 +487,16 @@ class HorizonOrchestrator:
             if self.config.sources.telegram.enabled:
                 telegram_scraper = TelegramScraper(self.config.sources.telegram, client)
                 tasks.append(self._fetch_with_progress("Telegram", telegram_scraper, since))
+
+            # Telegram via an authenticated user session (private channels/groups).
+            telegram_user_config = getattr(self.config.sources, "telegram_user", None)
+            if telegram_user_config and telegram_user_config.enabled:
+                telegram_user_scraper = TelegramUserScraper(telegram_user_config)
+                tasks.append(
+                    self._fetch_with_progress(
+                        "Telegram User", telegram_user_scraper, since
+                    )
+                )
 
             # Twitter (Apify or Playwright mode)
             if self.config.sources.twitter and self.config.sources.twitter.enabled:
