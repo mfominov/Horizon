@@ -41,8 +41,14 @@ def test_every_experiment_source_is_routed_to_both_radars(monkeypatch):
         return set(route) if isinstance(route, list) else {route}
 
     github_routes: dict[tuple[str, str], set[str]] = {}
+    github_discovery = None
     for source in config.sources.github:
-        github_routes.setdefault((source.owner, source.repo), set()).add(source.profile)
+        if source.type == "personalized_discovery":
+            github_discovery = source
+        else:
+            github_routes.setdefault((source.owner, source.repo), set()).add(
+                source.profile
+            )
 
     rss_routes: dict[str, set[str]] = {}
     for source in config.sources.rss:
@@ -80,6 +86,11 @@ def test_every_experiment_source_is_routed_to_both_radars(monkeypatch):
     assert all(route == expected_profiles for route in rss_routes.values())
     assert all(route == expected_profiles for route in telegram_routes.values())
     assert all(route == expected_profiles for route in reddit_routes.values())
+    assert github_discovery is not None
+    assert route_profiles(github_discovery.profile) == expected_profiles
+    assert github_discovery.seed_sources == ["watched", "starred"]
+    assert github_discovery.max_search_queries <= 10
+    assert github_discovery.fan_out_profiles is True
     assert route_profiles(config.sources.hackernews.profile) == expected_profiles
     assert route_profiles(config.sources.ossinsight.profile) == expected_profiles
     assert route_profiles(config.sources.google_news.profile) == expected_profiles

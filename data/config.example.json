@@ -55,6 +55,23 @@
         "repo": "uv",
         "enabled": true,
         "profile": "tech-news"
+      },
+      {
+        "type": "personalized_discovery",
+        "enabled": false,
+        "token_env": "GITHUB_TOKEN",
+        "seed_sources": ["watched", "starred"],
+        "max_watched_seeds": 100,
+        "max_starred_seeds": 200,
+        "active_within_days": 180,
+        "max_search_queries": 6,
+        "max_candidates": 20,
+        "min_stars": 50,
+        "exclude_forks": true,
+        "exclude_archived": true,
+        "fan_out_profiles": false,
+        "category": "github-discovery",
+        "profile": "tech-news"
       }
     ],
     "hackernews": {
