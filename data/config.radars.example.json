@@ -1,0 +1,180 @@
+{
+  "ai": {
+    "provider": "openai",
+    "model": "${OPENROUTER_MODEL}",
+    "base_url": "https://openrouter.ai/api/v1",
+    "api_key_env": "OPENROUTER_API_KEY",
+    "temperature": 0.2,
+    "max_tokens": 4096,
+    "throttle_sec": 0.5,
+    "languages": ["ru"],
+    "analysis_concurrency": 2,
+    "enrichment_concurrency": 2
+  },
+  "processing": {
+    "profiles_dir": "profiles",
+    "default_profile": "work-radar",
+    "profile_settings": {
+      "work-radar": {
+        "threshold": 0.0,
+        "topic_dedup": false
+      },
+      "personal-radar": {
+        "threshold": 0.0,
+        "topic_dedup": false
+      }
+    }
+  },
+  "display": {
+    "icon_style": "emoji"
+  },
+  "sources": {
+    "github": [
+      {
+        "type": "repo_releases",
+        "owner": "deckhouse",
+        "repo": "deckhouse",
+        "enabled": true,
+        "profile": "work-radar"
+      },
+      {
+        "type": "repo_releases",
+        "owner": "deckhouse",
+        "repo": "deckhouse",
+        "enabled": true,
+        "profile": "personal-radar"
+      },
+      {
+        "type": "repo_releases",
+        "owner": "kubernetes",
+        "repo": "kubernetes",
+        "enabled": true,
+        "profile": "work-radar"
+      },
+      {
+        "type": "repo_releases",
+        "owner": "kubernetes",
+        "repo": "kubernetes",
+        "enabled": true,
+        "profile": "personal-radar"
+      },
+      {
+        "type": "repo_releases",
+        "owner": "netbirdio",
+        "repo": "netbird",
+        "enabled": true,
+        "profile": "work-radar"
+      },
+      {
+        "type": "repo_releases",
+        "owner": "netbirdio",
+        "repo": "netbird",
+        "enabled": true,
+        "profile": "personal-radar"
+      },
+      {
+        "type": "repo_releases",
+        "owner": "wg-easy",
+        "repo": "wg-easy",
+        "enabled": true,
+        "profile": "work-radar"
+      },
+      {
+        "type": "repo_releases",
+        "owner": "wg-easy",
+        "repo": "wg-easy",
+        "enabled": true,
+        "profile": "personal-radar"
+      }
+    ],
+    "hackernews": {
+      "enabled": false
+    },
+    "rss": [
+      {
+        "name": "Kubernetes Blog — Work",
+        "url": "https://kubernetes.io/feed.xml",
+        "enabled": true,
+        "category": "platform-engineering",
+        "profile": "work-radar"
+      },
+      {
+        "name": "Kubernetes Blog — Personal",
+        "url": "https://kubernetes.io/feed.xml",
+        "enabled": true,
+        "category": "platform-engineering",
+        "profile": "personal-radar"
+      },
+      {
+        "name": "selfh.st — Work",
+        "url": "https://selfh.st/rss/",
+        "enabled": true,
+        "category": "self-hosting",
+        "profile": "work-radar"
+      },
+      {
+        "name": "selfh.st — Personal",
+        "url": "https://selfh.st/rss/",
+        "enabled": true,
+        "category": "self-hosting",
+        "profile": "personal-radar"
+      }
+    ],
+    "reddit": {
+      "enabled": false,
+      "subreddits": [],
+      "users": [],
+      "fetch_comments": 0
+    },
+    "telegram": {
+      "enabled": true,
+      "channels": [
+        {
+          "channel": "devops_fm",
+          "enabled": true,
+          "fetch_limit": 4,
+          "category": "devops",
+          "profile": "work-radar"
+        },
+        {
+          "channel": "devops_fm",
+          "enabled": true,
+          "fetch_limit": 4,
+          "category": "devops",
+          "profile": "personal-radar"
+        }
+      ]
+    },
+    "ossinsight": {
+      "enabled": false
+    }
+  },
+  "collection": {
+    "time_window_hours": 24
+  },
+  "digest": {
+    "max_items": null,
+    "group_by": "profile",
+    "profile_order": ["work-radar", "personal-radar"],
+    "category_groups": {},
+    "default_group": "other",
+    "default_group_limit": null
+  },
+  "webhook": {
+    "enabled": true,
+    "url_env": "HORIZON_WEBHOOK_URL",
+    "delivery": "summary",
+    "overview_position": "first",
+    "platform": "generic",
+    "layout": "markdown",
+    "fallback_layout": "markdown",
+    "languages": ["ru"],
+    "request_body": {
+      "title": "#{message_title}",
+      "text": "#{summary}",
+      "selected": "#{important_items}",
+      "total": "#{all_items}"
+    },
+    "headers": "Content-Type: application/json"
+  }
+}

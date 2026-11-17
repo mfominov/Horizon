@@ -1,0 +1,31 @@
+{
+  "id": "personal-radar",
+  "name": "Personal Radar",
+  "display_names": {
+    "ru": "Personal Radar"
+  },
+  "match": "match.md",
+  "analysis": "analysis.md",
+  "enrichment": {
+    "prompt": "enrichment.md",
+    "blocks": [
+      {
+        "id": "summary",
+        "type": "section",
+        "tools": [],
+        "primary": true
+      },
+      {
+        "id": "experiment",
+        "type": "section",
+        "tools": []
+      },
+      {
+        "id": "unknowns",
+        "type": "section",
+        "tools": [],
+        "optional": true
+      }
+    ]
+  }
+}

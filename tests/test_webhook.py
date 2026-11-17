@@ -1576,7 +1576,7 @@ class TestHTTPStatusHandling:
         mock_response = MagicMock()
         mock_response.status_code = 301
         mock_response.text = ""
-        mock_response.headers = {"location": "https://new-url.com"}
+        mock_response.headers = {"location": "https://example.com/new-url"}
 
         mock_console = MagicMock()
 

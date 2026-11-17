@@ -1,0 +1,31 @@
+{
+  "id": "work-radar",
+  "name": "Work Radar",
+  "display_names": {
+    "ru": "Work Radar"
+  },
+  "match": "match.md",
+  "analysis": "analysis.md",
+  "enrichment": {
+    "prompt": "enrichment.md",
+    "blocks": [
+      {
+        "id": "summary",
+        "type": "section",
+        "tools": [],
+        "primary": true
+      },
+      {
+        "id": "fit",
+        "type": "section",
+        "tools": []
+      },
+      {
+        "id": "unknowns",
+        "type": "section",
+        "tools": [],
+        "optional": true
+      }
+    ]
+  }
+}
