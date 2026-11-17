@@ -883,7 +883,7 @@ class TestSendDailySummary:
         summary = "# Horizon Daily\nTest summary"
 
         with patch.object(notifier, "notify", new_callable=AsyncMock) as mock_notify:
-            _run_async(
+            results = _run_async(
                 notifier.send_daily_summary(
                     summary=summary,
                     important_items=items,
@@ -902,6 +902,7 @@ class TestSendDailySummary:
             assert vars["all_items"] == 10
             assert vars["result"] == "success"
             assert vars["language"] == "en"
+            assert results == [mock_notify.return_value]
         del os.environ[_TEST_URL_ENV]
 
     def test_summary_delivery_zh_lang(self):

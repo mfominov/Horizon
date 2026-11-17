@@ -196,7 +196,7 @@ async def _run_test(
         return
 
     console.print(f"\n[bold]── Sending Test Notification (lang={lang}) ──[/bold]")
-    await notifier.send_daily_summary(
+    results = await notifier.send_daily_summary(
         summary=summary,
         important_items=items,
         all_items_count=len(items),
@@ -204,6 +204,11 @@ async def _run_test(
         lang=lang,
         summarizer=summarizer,
     )
+    failed_statuses = [result.status.value for result in results if not result.sent]
+    if failed_statuses:
+        raise RuntimeError(
+            "Webhook test delivery failed: " + ", ".join(failed_statuses)
+        )
 
 
 def main() -> None:

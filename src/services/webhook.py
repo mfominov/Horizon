@@ -794,7 +794,7 @@ class WebhookNotifier:
         date: str,
         lang: str,
         summarizer: DailySummarizer,
-    ) -> None:
+    ) -> List[WebhookDeliveryResult]:
         """Send daily summary webhook notification.
 
         Handles language filtering, delivery mode (summary vs summary_and_items),
@@ -821,13 +821,15 @@ class WebhookNotifier:
                 f"{self.icons['webhook_skip']} Skipping {lang.upper()} webhook notification "
                 f"(filtered by webhook.languages)"
             )
-            return
+            return []
 
         self.console.print(
             f"{self.icons['webhook']} Sending {lang.upper()} webhook notification..."
         )
+        results: List[WebhookDeliveryResult] = []
         for message in messages:
-            await self.notify(message)
+            results.append(await self.notify(message))
+        return results
 
     async def send_failure(
         self,
