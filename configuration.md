@@ -509,6 +509,64 @@ Telegram scraping uses the public web preview at `https://t.me/s/<channel>`, so 
 - `fetch_limit` — maximum number of recent messages to inspect per channel per run (default: `20`)
 - `category` — optional tag for balanced digest grouping (e.g., `"ai-news"`, `"finance"`)
 
+#### Authenticated Telegram user source
+
+For private channels and groups that your Telegram account can already read, configure the separate `telegram_user` source. It uses a local MTProto session and does not replace the public web-preview source. Horizon's adapter only reads messages from the explicitly listed channels; it does not expose send, edit, delete, join, or reaction operations.
+
+Create an application at [my.telegram.org](https://my.telegram.org), then put the resulting variable names—not their values—in the config:
+
+```json
+{
+  "sources": {
+    "telegram_user": {
+      "enabled": true,
+      "api_id_env": "TELEGRAM_API_ID",
+      "api_hash_env": "TELEGRAM_API_HASH",
+      "session_path": "data/telegram_user.session",
+      "channels": [
+        {
+          "channel": "platform_news",
+          "fetch_limit": 20,
+          "category": "platform-engineering",
+          "profile": ["work-radar", "personal-radar"]
+        },
+        {
+          "channel": -1001234567890,
+          "fetch_limit": 20,
+          "category": "private-group",
+          "profile": "personal-radar"
+        }
+      ]
+    }
+  }
+}
+```
+
+Set `TELEGRAM_API_ID` and `TELEGRAM_API_HASH` in `.env`, authorize once, and inspect the readable dialog identifiers:
+
+```bash
+uv run horizon-telegram --config data/config.json login
+uv run horizon-telegram --config data/config.json status
+uv run horizon-telegram --config data/config.json dialogs --limit 100
+```
+
+With Docker Compose, use the same mounted `data/` directory:
+
+```bash
+docker compose run --rm --entrypoint /app/.venv/bin/horizon-telegram \
+  horizon --config data/config.json login
+docker compose run --rm --entrypoint /app/.venv/bin/horizon-telegram \
+  horizon --config data/config.json dialogs --limit 100
+```
+
+The `.session` file is a login credential. Keep it out of Git, images, backups shared with others, and logs. Horizon requires mode `0600` on POSIX systems and refuses to create a new session during normal collection. Revoking the Telegram session invalidates Horizon's access.
+
+- `api_id_env` / `api_hash_env` — environment variable names holding Telegram application credentials
+- `session_path` — local Telethon session path; a `.session` suffix is added when omitted
+- `channels[].channel` — public username without `@`, or a numeric dialog ID from `horizon-telegram dialogs`
+- `channels[].fetch_limit` — maximum recent messages inspected per run
+- `channels[].profile` — one radar, both radars, or `"auto"`
+
 ### Twitter
 
 Requires an [Apify](https://apify.com) account. Set `APIFY_TOKEN` in your `.env` file. The free tier includes $5/month of credit, enough for roughly 20,000 tweets.
