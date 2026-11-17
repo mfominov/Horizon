@@ -35,16 +35,34 @@ def test_radar_config_uses_openrouter_and_two_explicit_profiles(monkeypatch):
 def test_every_experiment_source_is_routed_to_both_radars(monkeypatch):
     config = load_radar_config(monkeypatch)
 
-    github_routes = {(source.owner, source.repo, source.profile) for source in config.sources.github}
-    rss_routes = {(str(source.url), source.profile) for source in config.sources.rss}
-    telegram_routes = {(source.channel, source.profile) for source in config.sources.telegram.channels}
+    expected_profiles = {"work-radar", "personal-radar"}
 
-    assert github_routes == {
-        ("astral-sh", "uv", "work-radar"),
-        ("astral-sh", "uv", "personal-radar"),
+    github_routes: dict[tuple[str, str], set[str]] = {}
+    for source in config.sources.github:
+        github_routes.setdefault((source.owner, source.repo), set()).add(source.profile)
+
+    rss_routes: dict[str, set[str]] = {}
+    for source in config.sources.rss:
+        rss_routes.setdefault(str(source.url), set()).add(source.profile)
+
+    telegram_routes: dict[str, set[str]] = {}
+    for source in config.sources.telegram.channels:
+        telegram_routes.setdefault(source.channel, set()).add(source.profile)
+
+    assert set(github_routes) == {
+        ("deckhouse", "deckhouse"),
+        ("kubernetes", "kubernetes"),
+        ("netbirdio", "netbird"),
+        ("wg-easy", "wg-easy"),
     }
-    assert {profile for _, profile in rss_routes} == {"work-radar", "personal-radar"}
-    assert {profile for _, profile in telegram_routes} == {"work-radar", "personal-radar"}
+    assert set(rss_routes) == {
+        "https://kubernetes.io/feed.xml",
+        "https://selfh.st/rss/",
+    }
+    assert set(telegram_routes) == {"devops_fm"}
+    assert all(profiles == expected_profiles for profiles in github_routes.values())
+    assert all(profiles == expected_profiles for profiles in rss_routes.values())
+    assert all(profiles == expected_profiles for profiles in telegram_routes.values())
 
 
 def test_cross_source_dedup_keeps_same_url_for_independent_radars():

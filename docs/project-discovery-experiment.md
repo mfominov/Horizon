@@ -5,7 +5,10 @@ This fork evaluates Horizon as the Project Discovery MVP without changing Horizo
 ## Boundaries
 
 - OpenRouter is the only LLM endpoint; no Ollama or laptop connectivity is required.
-- The example uses one GitHub release feed, one RSS feed, and one public Telegram channel already present in Horizon's upstream example. Replace these public examples with the desired source list after the experiment.
+- The example uses a small public source set aligned with platform engineering,
+  SRE, networking, and self-hosting: Deckhouse, Kubernetes, NetBird, wg-easy,
+  the Kubernetes and selfh.st feeds, and DevOps FM.
+  Private channels belong in an untracked runtime configuration.
 - Profile thresholds are zero so the first experiment retains low scores for comparison.
 - Output remains Horizon's local Markdown digest. No PostgreSQL or feedback workflow is added.
 - Webhook validation is dry-run only. The example URL must never be used for a real send.

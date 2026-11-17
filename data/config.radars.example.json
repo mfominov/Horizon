@@ -32,15 +32,57 @@
     "github": [
       {
         "type": "repo_releases",
-        "owner": "astral-sh",
-        "repo": "uv",
+        "owner": "deckhouse",
+        "repo": "deckhouse",
         "enabled": true,
         "profile": "work-radar"
       },
       {
         "type": "repo_releases",
-        "owner": "astral-sh",
-        "repo": "uv",
+        "owner": "deckhouse",
+        "repo": "deckhouse",
+        "enabled": true,
+        "profile": "personal-radar"
+      },
+      {
+        "type": "repo_releases",
+        "owner": "kubernetes",
+        "repo": "kubernetes",
+        "enabled": true,
+        "profile": "work-radar"
+      },
+      {
+        "type": "repo_releases",
+        "owner": "kubernetes",
+        "repo": "kubernetes",
+        "enabled": true,
+        "profile": "personal-radar"
+      },
+      {
+        "type": "repo_releases",
+        "owner": "netbirdio",
+        "repo": "netbird",
+        "enabled": true,
+        "profile": "work-radar"
+      },
+      {
+        "type": "repo_releases",
+        "owner": "netbirdio",
+        "repo": "netbird",
+        "enabled": true,
+        "profile": "personal-radar"
+      },
+      {
+        "type": "repo_releases",
+        "owner": "wg-easy",
+        "repo": "wg-easy",
+        "enabled": true,
+        "profile": "work-radar"
+      },
+      {
+        "type": "repo_releases",
+        "owner": "wg-easy",
+        "repo": "wg-easy",
         "enabled": true,
         "profile": "personal-radar"
       }
@@ -50,17 +92,31 @@
     },
     "rss": [
       {
-        "name": "Simon Willison — Work",
-        "url": "https://simonwillison.net/atom/everything/",
+        "name": "Kubernetes Blog — Work",
+        "url": "https://kubernetes.io/feed.xml",
         "enabled": true,
-        "category": "software-engineering",
+        "category": "platform-engineering",
         "profile": "work-radar"
       },
       {
-        "name": "Simon Willison — Personal",
-        "url": "https://simonwillison.net/atom/everything/",
+        "name": "Kubernetes Blog — Personal",
+        "url": "https://kubernetes.io/feed.xml",
         "enabled": true,
-        "category": "software-engineering",
+        "category": "platform-engineering",
+        "profile": "personal-radar"
+      },
+      {
+        "name": "selfh.st — Work",
+        "url": "https://selfh.st/rss/",
+        "enabled": true,
+        "category": "self-hosting",
+        "profile": "work-radar"
+      },
+      {
+        "name": "selfh.st — Personal",
+        "url": "https://selfh.st/rss/",
+        "enabled": true,
+        "category": "self-hosting",
         "profile": "personal-radar"
       }
     ],
@@ -74,17 +130,17 @@
       "enabled": true,
       "channels": [
         {
-          "channel": "zaihuapd",
+          "channel": "devops_fm",
           "enabled": true,
-          "fetch_limit": 10,
-          "category": "technology",
+          "fetch_limit": 4,
+          "category": "devops",
           "profile": "work-radar"
         },
         {
-          "channel": "zaihuapd",
+          "channel": "devops_fm",
           "enabled": true,
-          "fetch_limit": 10,
-          "category": "technology",
+          "fetch_limit": 4,
+          "category": "devops",
           "profile": "personal-radar"
         }
       ]
