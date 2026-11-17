@@ -1,8 +1,10 @@
+import asyncio
 from types import SimpleNamespace
 
 import pytest
 
 from src.services import webhook_cli
+from src.services.webhook import WebhookDeliveryResult, WebhookDeliveryStatus
 
 
 def _fake_config(webhook=None, languages=("en",), icon_style="emoji"):
@@ -173,3 +175,28 @@ def test_lang_defaults_to_first_configured_language(monkeypatch):
     webhook_cli.main()
 
     assert run_calls == ["zh"]
+
+
+def test_live_test_fails_when_webhook_delivery_is_rejected(monkeypatch):
+    class RejectingNotifier:
+        def __init__(self, *args, **kwargs):
+            pass
+
+        async def send_daily_summary(self, **kwargs):
+            return [
+                WebhookDeliveryResult(
+                    WebhookDeliveryStatus.HTTP_FAILURE,
+                    status_code=400,
+                )
+            ]
+
+    monkeypatch.setattr(webhook_cli, "WebhookNotifier", RejectingNotifier)
+
+    with pytest.raises(RuntimeError, match="http_failure"):
+        asyncio.run(
+            webhook_cli._run_test(
+                SimpleNamespace(enabled=True),
+                lang="ru",
+                dry_run=False,
+            )
+        )

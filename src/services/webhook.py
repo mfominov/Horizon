@@ -229,14 +229,20 @@ def _extract_headers(headers_str: Optional[str]) -> dict:
 
 
 def redact_url(url: str) -> str:
-    """Return a log-safe URL without query strings or fragments."""
+    """Return a log-safe URL without query strings, fragments, or provider tokens."""
     try:
         parts = urlsplit(url)
     except ValueError:
         return "<invalid-url>"
     if not parts.scheme or not parts.netloc:
         return "<redacted-url>"
-    return urlunsplit((parts.scheme, parts.netloc, parts.path, "", ""))
+
+    path = parts.path
+    host = (parts.hostname or "").lower().rstrip(".")
+    if host == "api.telegram.org":
+        path = re.sub(r"(?i)^/bot[^/]+", "/bot<redacted>", path)
+
+    return urlunsplit((parts.scheme, parts.netloc, path, "", ""))
 
 
 def redact_headers(headers: dict[str, str]) -> dict[str, str]:
@@ -788,7 +794,7 @@ class WebhookNotifier:
         date: str,
         lang: str,
         summarizer: DailySummarizer,
-    ) -> None:
+    ) -> List[WebhookDeliveryResult]:
         """Send daily summary webhook notification.
 
         Handles language filtering, delivery mode (summary vs summary_and_items),
@@ -815,13 +821,15 @@ class WebhookNotifier:
                 f"{self.icons['webhook_skip']} Skipping {lang.upper()} webhook notification "
                 f"(filtered by webhook.languages)"
             )
-            return
+            return []
 
         self.console.print(
             f"{self.icons['webhook']} Sending {lang.upper()} webhook notification..."
         )
+        results: List[WebhookDeliveryResult] = []
         for message in messages:
-            await self.notify(message)
+            results.append(await self.notify(message))
+        return results
 
     async def send_failure(
         self,

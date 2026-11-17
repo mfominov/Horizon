@@ -1118,6 +1118,9 @@ With this layout, Horizon sends one interactive card containing the overview and
 
 Use `horizon-webhook` to preview or send a test notification without running the full pipeline:
 
+Dry-run previews and logs remove URL query strings and redact Telegram Bot API
+tokens embedded in `api.telegram.org/bot...` paths.
+
 ```bash
 uv run horizon-webhook --dry-run
 ```

@@ -415,6 +415,16 @@ class TestWebhookRedaction:
             == "https://example.com/hook"
         )
 
+    def test_redact_url_hides_telegram_bot_token_in_path(self):
+        assert redact_url(
+            "https://api.telegram.org/bot123456:secret-token/sendMessage"
+        ) == "https://api.telegram.org/bot<redacted>/sendMessage"
+
+    def test_redact_url_does_not_rewrite_non_telegram_bot_path(self):
+        assert redact_url(
+            "https://example.com/bot123456:secret-token/sendMessage"
+        ) == "https://example.com/bot123456:secret-token/sendMessage"
+
     def test_redact_headers_masks_sensitive_values(self):
         assert redact_headers({"Authorization": "Bearer secret", "X-Trace": "ok"}) == {
             "Authorization": "<redacted>",
@@ -873,7 +883,7 @@ class TestSendDailySummary:
         summary = "# Horizon Daily\nTest summary"
 
         with patch.object(notifier, "notify", new_callable=AsyncMock) as mock_notify:
-            _run_async(
+            results = _run_async(
                 notifier.send_daily_summary(
                     summary=summary,
                     important_items=items,
@@ -892,6 +902,7 @@ class TestSendDailySummary:
             assert vars["all_items"] == 10
             assert vars["result"] == "success"
             assert vars["language"] == "en"
+            assert results == [mock_notify.return_value]
         del os.environ[_TEST_URL_ENV]
 
     def test_summary_delivery_zh_lang(self):
