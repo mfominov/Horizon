@@ -49,3 +49,10 @@ uv run python scripts/compare_radars.py \
 ```
 
 Review paired URLs, score deltas, and the explanation/unknowns in both sections. Only after several representative runs should the experiment decide whether the single 0-10 score is sufficient, whether source collection should fan out to both profiles after one fetch, and whether PostgreSQL or feedback is justified.
+
+## Container image
+
+The fork's CI is prepared to publish `ghcr.io/mfominov/horizon` only from the
+default branch or a `v*` tag after all test and security jobs pass. See
+[`docs/container-publishing.md`](container-publishing.md) for tags, provenance,
+visibility, and deployment boundaries.
