@@ -229,14 +229,20 @@ def _extract_headers(headers_str: Optional[str]) -> dict:
 
 
 def redact_url(url: str) -> str:
-    """Return a log-safe URL without query strings or fragments."""
+    """Return a log-safe URL without query strings, fragments, or provider tokens."""
     try:
         parts = urlsplit(url)
     except ValueError:
         return "<invalid-url>"
     if not parts.scheme or not parts.netloc:
         return "<redacted-url>"
-    return urlunsplit((parts.scheme, parts.netloc, parts.path, "", ""))
+
+    path = parts.path
+    host = (parts.hostname or "").lower().rstrip(".")
+    if host == "api.telegram.org":
+        path = re.sub(r"(?i)^/bot[^/]+", "/bot<redacted>", path)
+
+    return urlunsplit((parts.scheme, parts.netloc, path, "", ""))
 
 
 def redact_headers(headers: dict[str, str]) -> dict[str, str]:

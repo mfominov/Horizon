@@ -415,6 +415,16 @@ class TestWebhookRedaction:
             == "https://example.com/hook"
         )
 
+    def test_redact_url_hides_telegram_bot_token_in_path(self):
+        assert redact_url(
+            "https://api.telegram.org/bot123456:secret-token/sendMessage"
+        ) == "https://api.telegram.org/bot<redacted>/sendMessage"
+
+    def test_redact_url_does_not_rewrite_non_telegram_bot_path(self):
+        assert redact_url(
+            "https://example.com/bot123456:secret-token/sendMessage"
+        ) == "https://example.com/bot123456:secret-token/sendMessage"
+
     def test_redact_headers_masks_sensitive_values(self):
         assert redact_headers({"Authorization": "Bearer secret", "X-Trace": "ok"}) == {
             "Authorization": "<redacted>",
