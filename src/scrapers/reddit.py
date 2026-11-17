@@ -80,13 +80,20 @@ class RedditScraper(BaseScraper):
         if not self.config.get("enabled", True):
             return result
 
+        completed = 0
         for sub_cfg in self.reddit_config.subreddits:
             if sub_cfg.enabled:
+                if completed and self.reddit_config.request_delay_sec:
+                    await asyncio.sleep(self.reddit_config.request_delay_sec)
                 await result.collect(f"r/{sub_cfg.subreddit}", self._fetch_subreddit(sub_cfg, since))
+                completed += 1
 
         for user_cfg in self.reddit_config.users:
             if user_cfg.enabled:
+                if completed and self.reddit_config.request_delay_sec:
+                    await asyncio.sleep(self.reddit_config.request_delay_sec)
                 await result.collect(f"u/{user_cfg.username}", self._fetch_user(user_cfg, since))
+                completed += 1
 
         return result
 

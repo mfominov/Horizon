@@ -113,6 +113,7 @@
     ],
     "reddit": {
       "enabled": true,
+      "request_delay_sec": 2.0,
       "subreddits": [
         {
           "subreddit": "MachineLearning",
@@ -181,6 +182,13 @@
           "profile": ["tech-news", "finance-news"]
         }
       ]
+    },
+    "telegram_user": {
+      "enabled": false,
+      "api_id_env": "TELEGRAM_API_ID",
+      "api_hash_env": "TELEGRAM_API_HASH",
+      "session_path": "data/telegram_user.session",
+      "channels": []
     },
     "gdelt": {
       "enabled": false,

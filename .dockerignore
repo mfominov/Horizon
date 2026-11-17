@@ -33,6 +33,8 @@ data/*
 !data/config.example.json
 !data/config.radars.example.json
 !data/presets.json
+*.session
+*.session-journal
 
 # Build artifacts
 *.egg-info/

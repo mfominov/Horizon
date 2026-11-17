@@ -173,6 +173,10 @@ def test_mcp_filter_and_reporting_support_every_registered_source() -> None:
                 "rss": [{"name": "Feed", "url": "https://example.com/feed"}],
                 "reddit": {"enabled": True, "subreddits": [{"subreddit": "python"}]},
                 "telegram": {"enabled": True, "channels": [{"channel": "updates"}]},
+                    "telegram_user": {
+                        "enabled": True,
+                        "channels": [{"channel": "private_updates"}],
+                    },
                 "twitter": {"enabled": True, "users": ["openai"]},
                 "openbb": {"enabled": True, "watchlists": [{"name": "tech", "symbols": ["NVDA"]}]},
                 "ossinsight": {"enabled": True},

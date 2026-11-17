@@ -313,7 +313,7 @@ Schedule Horizon with **GitHub Actions** using the [daily workflow template](.gi
 | **Hacker News** | Top stories by score | Yes (top N comments) |
 | **RSS / Atom** | Any RSS or Atom feed | — |
 | **Reddit** | Subreddits + user posts | Yes (top N comments) |
-| **Telegram** | Public channel messages | — |
+| **Telegram** | Public channels, or channels/groups visible to an authenticated user | — |
 | **Twitter / X** | User timelines + keyword searches (Apify) | Yes (top N replies) |
 | **GitHub** | User events & repo releases | — |
 | **OpenBB** | Financial company news by watchlist/provider | — |
