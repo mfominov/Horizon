@@ -57,11 +57,15 @@ Uses the [GitHub REST API](https://api.github.com):
 
 - `GET /users/{username}/events/public` — user activity events
 - `GET /repos/{owner}/{repo}/releases` — repository releases
+- `GET /user/subscriptions` — authenticated user's watched repositories
+- `GET /user/starred` — authenticated user's recently updated starred repositories
+- `GET /search/repositories` — bounded related-repository discovery
 
-Two source types are supported:
+Three source types are supported:
 
 - **`user_events`** — tracks push, create, release, public, and watch events for a user
 - **`repo_releases`** — tracks new releases for a specific repository
+- **`personalized_discovery`** — derives public candidates from watched/starred topics and languages
 
 **Config** (`sources.github`, list of entries):
 
@@ -84,9 +88,25 @@ Two source types are supported:
 }
 ```
 
+```json
+{
+  "type": "personalized_discovery",
+  "seed_sources": ["watched", "starred"],
+  "max_starred_seeds": 200,
+  "max_search_queries": 6,
+  "max_candidates": 20,
+  "min_stars": 50,
+  "fan_out_profiles": true,
+  "profile": ["work-radar", "personal-radar"]
+}
+```
+
 - `category` — optional tag for balanced digest grouping; set per source entry
 
-**Authentication**: Set `GITHUB_TOKEN` in your environment for higher rate limits (5000 req/hr vs 60 without).
+**Authentication**: Set `GITHUB_TOKEN` in your environment for higher rate
+limits. `personalized_discovery` requires authentication and a token with
+read-only access to the user's Watching and Starring lists. It ignores private
+repositories and does not modify subscriptions or stars.
 
 ## RSS
 
