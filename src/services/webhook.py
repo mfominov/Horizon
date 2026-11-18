@@ -20,7 +20,7 @@ from rich.console import Console
 from ..ai.markdown_utils import clean_app_summary_markdown
 from ..console_icons import get_icons
 from ..models import ContentItem, WebhookConfig
-from ..ai.summarizer import DailySummarizer
+from ..ai.summarizer import DailySummarizer, SummaryItemView
 from ..url_security import UnsafeURLError, safe_request, validate_http_url
 
 logger = logging.getLogger(__name__)
@@ -238,6 +238,14 @@ def _telegram_html_from_markdown(value: str) -> str:
 
     rendered = render_children(document)
     return re.sub(r"\n{3,}", "\n\n", rendered).strip()
+
+
+def _rendered_message_length(value: str, platform: str) -> int:
+    """Measure the user-visible message after platform formatting."""
+    if platform.lower() == "telegram":
+        rendered = _telegram_html_from_markdown(value)
+        return len(BeautifulSoup(rendered, "html.parser").get_text())
+    return len(_format_markdown_for_webhook(value))
 
 
 def _prepare_variables_for_body(
@@ -615,6 +623,85 @@ class WebhookNotifier:
             ]
 
         delivery = getattr(self.config, "delivery", "summary")
+        if delivery == "profile_overviews":
+            view = summarizer.build_view(important_items, lang)
+            if not view.groups:
+                return [
+                    {
+                        **base_vars,
+                        "message_title": (
+                            f"Horizon {date} 日报"
+                            if lang == "zh"
+                            else f"Horizon {date} Daily"
+                        ),
+                        "message_kind": "summary",
+                        "summary": summary,
+                    }
+                ]
+
+            platform = getattr(self.config, "platform", "generic")
+            char_limit = getattr(
+                self.config, "profile_message_char_limit", 3500
+            )
+            messages: List[dict[str, Any]] = []
+            for group in view.groups:
+                pages: List[List[SummaryItemView]] = []
+                current_page: List[SummaryItemView] = []
+                for view_item in group.items:
+                    candidate = current_page + [view_item]
+                    candidate_summary = summarizer.generate_webhook_profile_overview(
+                        group,
+                        candidate,
+                        date,
+                        all_items_count,
+                        language=lang,
+                        page_number=999,
+                        page_count=999,
+                    )
+                    if (
+                        current_page
+                        and _rendered_message_length(candidate_summary, platform)
+                        > char_limit
+                    ):
+                        pages.append(current_page)
+                        current_page = [view_item]
+                    else:
+                        current_page = candidate
+                if current_page:
+                    pages.append(current_page)
+
+                page_count = len(pages)
+                for page_number, page_items in enumerate(pages, start=1):
+                    page_summary = summarizer.generate_webhook_profile_overview(
+                        group,
+                        page_items,
+                        date,
+                        all_items_count,
+                        language=lang,
+                        page_number=page_number,
+                        page_count=page_count,
+                    )
+                    messages.append(
+                        {
+                            **base_vars,
+                            "message_title": (
+                                f"Horizon {group.name} {date}"
+                                + (
+                                    f" {page_number}/{page_count}"
+                                    if page_count > 1
+                                    else ""
+                                )
+                            ),
+                            "message_kind": "profile_overview",
+                            "item_profile": group.profile_id,
+                            "item_profile_name": group.name,
+                            "profile_page": page_number,
+                            "profile_page_count": page_count,
+                            "summary": page_summary,
+                        }
+                    )
+            return messages
+
         if delivery == "summary_and_items":
             item_messages: List[dict[str, Any]] = []
             overview = summarizer.generate_webhook_overview(

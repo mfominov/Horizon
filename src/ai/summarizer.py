@@ -319,6 +319,49 @@ class DailySummarizer:
 
         return normalize_language(header + "\n\n".join(sections), language)
 
+    def generate_webhook_profile_overview(
+        self,
+        group: SummaryGroupView,
+        items: List[SummaryItemView],
+        date: str,
+        total_fetched: int,
+        language: str = "en",
+        *,
+        page_number: int = 1,
+        page_count: int = 1,
+    ) -> str:
+        """Generate one compact, source-linked profile overview page."""
+        labels = LABELS.get(language, LABELS["en"])
+        page_suffix = f" ({page_number}/{page_count})" if page_count > 1 else ""
+        profile_name = group.name
+        if len(profile_name) > 100:
+            profile_name = profile_name[:99].rstrip() + "…"
+        header = (
+            f"# Horizon {profile_name} - {date}{page_suffix}\n\n"
+            "> "
+            + labels["selected_items"].format(
+                total=total_fetched, selected=len(group.items)
+            )
+            + "\n\n"
+        )
+
+        entries = []
+        for view_item in items:
+            display_title = view_item.title
+            if len(display_title) > 300:
+                display_title = display_title[:299].rstrip() + "…"
+            title = _escape_markdown(display_title)
+            if language == "zh":
+                title = _pangu(title)
+            url = _safe_url(view_item.item.url)
+            title_link = f"[{title}]({url})" if url else title
+            entries.append(
+                f"{view_item.index}. {title_link} "
+                f"\u2b50\ufe0f {view_item.score}/10"
+            )
+
+        return normalize_language(header + "\n".join(entries), language)
+
     def generate_webhook_item(
         self,
         item: ContentItem,
