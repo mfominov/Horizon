@@ -47,6 +47,13 @@ def _pangu(text: str) -> str:
     return text
 
 
+def _ru_material_genitive(count: int) -> str:
+    """Return the genitive form used after ``из N`` in Russian."""
+    if count % 100 not in range(11, 15) and count % 10 == 1:
+        return "материала"
+    return "материалов"
+
+
 LABELS = {
     "en": {
         "header": "Horizon Daily",
@@ -331,18 +338,23 @@ class DailySummarizer:
         page_count: int = 1,
     ) -> str:
         """Generate one compact, source-linked profile overview page."""
-        labels = LABELS.get(language, LABELS["en"])
         page_suffix = f" ({page_number}/{page_count})" if page_count > 1 else ""
         profile_name = group.name
         if len(profile_name) > 100:
             profile_name = profile_name[:99].rstrip() + "…"
-        header = (
-            f"# Horizon {profile_name} - {date}{page_suffix}\n\n"
-            "> "
-            + labels["selected_items"].format(
+        if language == "ru":
+            selection = (
+                f"Отобрано {len(group.items)} из {total_fetched} "
+                f"{_ru_material_genitive(total_fetched)}"
+            )
+        else:
+            labels = LABELS.get(language, LABELS["en"])
+            selection = labels["selected_items"].format(
                 total=total_fetched, selected=len(group.items)
             )
-            + "\n\n"
+        header = (
+            f"# Horizon {profile_name} - {date}{page_suffix}\n\n"
+            f"> {selection}\n\n"
         )
 
         entries = []
@@ -356,8 +368,7 @@ class DailySummarizer:
             url = _safe_url(view_item.item.url)
             title_link = f"[{title}]({url})" if url else title
             entries.append(
-                f"{view_item.index}. {title_link} "
-                f"\u2b50\ufe0f {view_item.score}/10"
+                f"{view_item.index}. \u2b50\ufe0f {view_item.score}/10 — {title_link}"
             )
 
         return normalize_language(header + "\n".join(entries), language)

@@ -1082,11 +1082,46 @@ class TestSendDailySummary:
         assert all(
             message["message_kind"] == "profile_overview" for message in messages
         )
-        assert "[Work tool](https://example.com/work)" in messages[0]["summary"]
-        assert "[Personal tool](https://example.com/personal)" in messages[1]["summary"]
+        assert (
+            "1. ⭐️ 8.0/10 — [Work tool](https://example.com/work)"
+            in messages[0]["summary"]
+        )
+        assert (
+            "1. ⭐️ 8.0/10 — [Personal tool](https://example.com/personal)"
+            in messages[1]["summary"]
+        )
         assert "Full summary with details" not in "".join(
             message["summary"] for message in messages
         )
+        del os.environ[_TEST_URL_ENV]
+
+    def test_profile_overviews_localizes_russian_selection_count(self):
+        os.environ[_TEST_URL_ENV] = _TEST_URL
+        config = WebhookConfig(
+            enabled=True,
+            url_env=_TEST_URL_ENV,
+            delivery="profile_overviews",
+            platform="telegram",
+        )
+        notifier = WebhookNotifier(config)
+        summarizer = DailySummarizer(
+            profile_names={"work-radar": {"ru": "Work Radar"}}
+        )
+        item = _make_item(title="Инструмент")
+        item.profile = "work-radar"
+        item.processing.classification.profile = "work-radar"
+
+        messages = notifier.build_daily_summary_messages(
+            summary="# Полный отчёт",
+            important_items=[item],
+            all_items_count=51,
+            date="2026-11-18",
+            lang="ru",
+            summarizer=summarizer,
+        )
+
+        assert "> Отобрано 1 из 51 материала" in messages[0]["summary"]
+        assert "1. ⭐️ 8.0/10 — [Инструмент]" in messages[0]["summary"]
         del os.environ[_TEST_URL_ENV]
 
     def test_profile_overviews_paginates_without_dropping_items(self):
