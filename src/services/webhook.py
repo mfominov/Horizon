@@ -1,16 +1,21 @@
 """Webhook notification service for Horizon."""
 
+import html
 import json
 import logging
 import os
 import re
-from rich.console import Console
 from dataclasses import asdict, dataclass
-from enum import Enum
-from urllib.parse import urlsplit, urlunsplit
 from datetime import datetime, timezone
+from enum import Enum
 from typing import Any, List, Optional, Union, cast
+from urllib.parse import urlsplit, urlunsplit
+
 import httpx
+import markdown as markdown_lib
+from bs4 import BeautifulSoup
+from bs4.element import NavigableString, Tag
+from rich.console import Console
 
 from ..ai.markdown_utils import clean_app_summary_markdown
 from ..console_icons import get_icons
@@ -148,15 +153,91 @@ def _format_markdown_for_webhook(value: str) -> str:
     return clean_app_summary_markdown(value)
 
 
+def _telegram_html_from_markdown(value: str) -> str:
+    """Render Horizon Markdown with Telegram's supported HTML subset."""
+    document = BeautifulSoup(
+        markdown_lib.markdown(clean_app_summary_markdown(value)),
+        "html.parser",
+    )
+
+    def render_children(node: Any) -> str:
+        return "".join(render_node(child) for child in node.children)
+
+    def render_node(node: Any) -> str:
+        if isinstance(node, NavigableString):
+            return html.escape(str(node), quote=False)
+        if not isinstance(node, Tag):
+            return ""
+
+        tag = node.name.lower()
+        content = render_children(node)
+        if tag in {"h1", "h2", "h3", "h4", "h5", "h6"}:
+            return f"<b>{content.strip()}</b>\n\n"
+        if tag == "p":
+            return f"{content.strip()}\n\n"
+        if tag in {"strong", "b"}:
+            return f"<b>{content}</b>"
+        if tag in {"em", "i"}:
+            return f"<i>{content}</i>"
+        if tag == "code":
+            return f"<code>{content}</code>"
+        if tag == "pre":
+            return f"<pre>{html.escape(node.get_text(), quote=False)}</pre>\n\n"
+        if tag == "blockquote":
+            return f"<blockquote>{content.strip()}</blockquote>\n\n"
+        if tag == "br":
+            return "\n"
+        if tag == "hr":
+            return "──────────\n\n"
+        if tag == "a":
+            href = str(node.get("href") or "").strip()
+            try:
+                parsed = urlsplit(href)
+                is_public_link = parsed.scheme.lower() in {"http", "https"} and bool(
+                    parsed.netloc
+                )
+            except ValueError:
+                is_public_link = False
+            if is_public_link:
+                safe_href = html.escape(href, quote=True)
+                return f'<a href="{safe_href}">{content}</a>'
+            return content
+        if tag in {"ul", "ol"}:
+            lines: list[str] = []
+            items = node.find_all("li", recursive=False)
+            for index, item in enumerate(items, start=1):
+                prefix = f"{index}. " if tag == "ol" else "• "
+                item_content = render_children(item).strip()
+                item_content = re.sub(r"\n{2,}", "\n", item_content)
+                lines.append(f"{prefix}{item_content}")
+            return "\n".join(lines) + "\n\n"
+        if tag == "li":
+            return content
+        return content
+
+    rendered = render_children(document)
+    return re.sub(r"\n{3,}", "\n\n", rendered).strip()
+
+
 def _prepare_variables_for_body(
-    raw_body: Union[str, dict, list, None], variables: dict
+    raw_body: Union[str, dict, list, None],
+    variables: dict,
+    platform: str = "generic",
 ) -> dict:
     """Apply webhook-safe variable formatting before body rendering."""
     if raw_body is None or "summary" not in variables:
         return variables
 
     prepared = dict(variables)
-    prepared["summary"] = _format_markdown_for_webhook(str(variables["summary"]))
+    summary = _format_markdown_for_webhook(str(variables["summary"]))
+    if platform.lower() == "telegram":
+        prepared["summary"] = _telegram_html_from_markdown(summary)
+        if "message_title" in prepared:
+            prepared["message_title"] = html.escape(
+                str(prepared["message_title"]), quote=False
+            )
+    else:
+        prepared["summary"] = summary
     return prepared
 
 
@@ -326,11 +407,14 @@ class WebhookNotifier:
         content_type = "application/x-www-form-urlencoded"
         body_content = None
         raw_body = variables.get("_request_body_override", self.config.request_body)
-        body_variables = _prepare_variables_for_body(raw_body, variables)
+        platform = getattr(self.config, "platform", "generic")
+        body_variables = _prepare_variables_for_body(raw_body, variables, platform)
 
         if raw_body:
             if isinstance(raw_body, (dict, list)):
                 rendered_obj = _render(raw_body, body_variables)
+                if platform.lower() == "telegram" and isinstance(rendered_obj, dict):
+                    rendered_obj["parse_mode"] = "HTML"
                 body_content = json.dumps(rendered_obj, ensure_ascii=False)
                 content_type = "application/json"
             elif isinstance(raw_body, str) and raw_body.strip():
