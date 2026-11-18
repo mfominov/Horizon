@@ -156,9 +156,34 @@ def _format_markdown_for_webhook(value: str) -> str:
 def _telegram_html_from_markdown(value: str) -> str:
     """Render Horizon Markdown with Telegram's supported HTML subset."""
     document = BeautifulSoup(
-        markdown_lib.markdown(clean_app_summary_markdown(value)),
+        markdown_lib.markdown(
+            clean_app_summary_markdown(value, remove_anchor_ids=False)
+        ),
         "html.parser",
     )
+
+    def public_http_url(value: str) -> str | None:
+        candidate = value.strip()
+        try:
+            parsed = urlsplit(candidate)
+        except ValueError:
+            return None
+        if parsed.scheme.lower() not in {"http", "https"} or not parsed.netloc:
+            return None
+        return candidate
+
+    anchor_targets: dict[str, str] = {}
+    for anchor in document.find_all("a", id=True):
+        anchor_id = str(anchor.get("id") or "").strip()
+        heading = anchor.find_next(["h1", "h2", "h3", "h4", "h5", "h6"])
+        title_link = heading.find("a", href=True) if heading else None
+        target = (
+            public_http_url(str(title_link.get("href") or ""))
+            if title_link
+            else None
+        )
+        if anchor_id and target:
+            anchor_targets[anchor_id] = target
 
     def render_children(node: Any) -> str:
         return "".join(render_node(child) for child in node.children)
@@ -191,15 +216,11 @@ def _telegram_html_from_markdown(value: str) -> str:
             return "──────────\n\n"
         if tag == "a":
             href = str(node.get("href") or "").strip()
-            try:
-                parsed = urlsplit(href)
-                is_public_link = parsed.scheme.lower() in {"http", "https"} and bool(
-                    parsed.netloc
-                )
-            except ValueError:
-                is_public_link = False
-            if is_public_link:
-                safe_href = html.escape(href, quote=True)
+            if href.startswith("#"):
+                href = anchor_targets.get(href[1:], "")
+            target = public_http_url(href)
+            if target:
+                safe_href = html.escape(target, quote=True)
                 return f'<a href="{safe_href}">{content}</a>'
             return content
         if tag in {"ul", "ol"}:
@@ -229,15 +250,14 @@ def _prepare_variables_for_body(
         return variables
 
     prepared = dict(variables)
-    summary = _format_markdown_for_webhook(str(variables["summary"]))
     if platform.lower() == "telegram":
-        prepared["summary"] = _telegram_html_from_markdown(summary)
+        prepared["summary"] = _telegram_html_from_markdown(str(variables["summary"]))
         if "message_title" in prepared:
             prepared["message_title"] = html.escape(
                 str(prepared["message_title"]), quote=False
             )
     else:
-        prepared["summary"] = summary
+        prepared["summary"] = _format_markdown_for_webhook(str(variables["summary"]))
     return prepared
 
 

@@ -132,6 +132,7 @@ class TestTelegramRendering:
             "---\n\n"
             "**Work Radar**\n\n"
             "1. [Sentry](#item-work-radar-1) ⭐️ 9.0/10\n\n"
+            '<a id="item-work-radar-1"></a>\n'
             "### [Sentry](https://github.com/getsentry/sentry) ⭐️ 9.0/10"
         )
 
@@ -140,7 +141,10 @@ class TestTelegramRendering:
         assert "<b>Horizon Daily - 2026-11-18</b>" in rendered
         assert "<blockquote>Selected 1 item</blockquote>" in rendered
         assert "<b>Work Radar</b>" in rendered
-        assert "1. Sentry ⭐️ 9.0/10" in rendered
+        assert (
+            '1. <a href="https://github.com/getsentry/sentry">Sentry</a> ⭐️ 9.0/10'
+            in rendered
+        )
         assert 'href="#item-work-radar-1"' not in rendered
         assert '<a href="https://github.com/getsentry/sentry">Sentry</a>' in rendered
         assert "**" not in rendered
