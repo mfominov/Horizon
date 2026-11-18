@@ -3,7 +3,7 @@
 import asyncio
 from datetime import datetime, timezone
 
-from src.ai.summarizer import DailySummarizer
+from src.ai.summarizer import DailySummarizer, _ru_material_genitive
 from src.models import (
     ArtifactSource,
     ClassificationResult,
@@ -18,6 +18,14 @@ from src.models import (
 
 def _run_async(coro):
     return asyncio.run(coro)
+
+
+def test_ru_material_genitive_handles_one_and_teen_endings():
+    assert _ru_material_genitive(1) == "материала"
+    assert _ru_material_genitive(11) == "материалов"
+    assert _ru_material_genitive(21) == "материала"
+    assert _ru_material_genitive(22) == "материалов"
+    assert _ru_material_genitive(111) == "материалов"
 
 
 def _make_item(idx: int) -> ContentItem:
