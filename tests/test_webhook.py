@@ -25,6 +25,7 @@ from src.services.webhook import (
     WebhookDeliveryStatus,
     _format_markdown_for_webhook,
     _prepare_variables_for_body,
+    _telegram_html_from_markdown,
     _render,
     _truncate,
     _isjson,
@@ -121,6 +122,58 @@ class TestRenderDictAndList:
         serialized = json.dumps(result)
         parsed_back = json.loads(serialized)
         assert parsed_back["content"] == summary
+
+
+class TestTelegramRendering:
+    def test_commonmark_is_converted_to_telegram_html(self):
+        summary = (
+            "# Horizon Daily - 2026-11-18\n\n"
+            "> Selected 1 item\n\n"
+            "---\n\n"
+            "**Work Radar**\n\n"
+            "1. [Sentry](#item-work-radar-1) ⭐️ 9.0/10\n\n"
+            "### [Sentry](https://github.com/getsentry/sentry) ⭐️ 9.0/10"
+        )
+
+        rendered = _telegram_html_from_markdown(summary)
+
+        assert "<b>Horizon Daily - 2026-11-18</b>" in rendered
+        assert "<blockquote>Selected 1 item</blockquote>" in rendered
+        assert "<b>Work Radar</b>" in rendered
+        assert "1. Sentry ⭐️ 9.0/10" in rendered
+        assert 'href="#item-work-radar-1"' not in rendered
+        assert '<a href="https://github.com/getsentry/sentry">Sentry</a>' in rendered
+        assert "**" not in rendered
+        assert "###" not in rendered
+
+    def test_telegram_preview_forces_html_parse_mode(self):
+        os.environ[_TEST_URL_ENV] = "https://api.telegram.org/botplaceholder/sendMessage"
+        try:
+            config = WebhookConfig(
+                enabled=True,
+                url_env=_TEST_URL_ENV,
+                platform="telegram",
+                request_body={
+                    "chat_id": "123",
+                    "text": "#{message_title}\n\n#{summary}",
+                },
+            )
+            notifier = WebhookNotifier(config)
+
+            preview = notifier.build_preview(
+                {
+                    "message_title": "Horizon & Daily",
+                    "summary": "# Report\n\n**Work Radar**",
+                }
+            )
+            body = json.loads(preview["body"])
+
+            assert body["parse_mode"] == "HTML"
+            assert body["text"] == (
+                "Horizon &amp; Daily\n\n<b>Report</b>\n\n<b>Work Radar</b>"
+            )
+        finally:
+            del os.environ[_TEST_URL_ENV]
 
 
 class TestTruncate:
@@ -1785,7 +1838,15 @@ class TestWebhookConfigFieldValidation:
         assert config.overview_position == "last"
 
     def test_each_valid_platform(self):
-        for p in ["generic", "feishu", "lark", "dingtalk", "slack", "discord"]:
+        for p in [
+            "generic",
+            "telegram",
+            "feishu",
+            "lark",
+            "dingtalk",
+            "slack",
+            "discord",
+        ]:
             config = WebhookConfig(enabled=True, platform=p)
             assert config.platform == p
 
