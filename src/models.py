@@ -622,7 +622,10 @@ class WebhookConfig(BaseModel):
         None  # POST body: real JSON object or string with #{key} placeholders; if empty, will use GET
     )
     headers: Optional[str] = None  # Custom headers, "Key: Value" per line
-    delivery: Literal["summary", "summary_and_items"] = "summary"
+    delivery: Literal[
+        "summary", "summary_and_items", "profile_overviews"
+    ] = "summary"
+    profile_message_char_limit: int = Field(default=3500, ge=512, le=4096)
     overview_position: Literal["first", "last"] = "first"
     platform: Literal[
         "generic", "telegram", "feishu", "lark", "dingtalk", "slack", "discord"

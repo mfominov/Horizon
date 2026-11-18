@@ -25,6 +25,7 @@ from src.services.webhook import (
     WebhookDeliveryStatus,
     _format_markdown_for_webhook,
     _prepare_variables_for_body,
+    _rendered_message_length,
     _telegram_html_from_markdown,
     _render,
     _truncate,
@@ -854,6 +855,7 @@ class TestWebhookConfigModel:
         assert config.platform == "generic"
         assert config.layout == "markdown"
         assert config.fallback_layout == "markdown"
+        assert config.profile_message_char_limit == 3500
 
     def test_full_config(self):
         config = WebhookConfig(
@@ -1037,6 +1039,102 @@ class TestSendDailySummary:
             assert item2_vars["message_kind"] == "item"
             assert item2_vars["item_index"] == 2
             assert item2_vars["item_url"] == "https://example.com/b"
+        del os.environ[_TEST_URL_ENV]
+
+    def test_profile_overviews_sends_one_source_linked_message_per_profile(self):
+        os.environ[_TEST_URL_ENV] = _TEST_URL
+        config = WebhookConfig(
+            enabled=True,
+            url_env=_TEST_URL_ENV,
+            delivery="profile_overviews",
+            platform="telegram",
+        )
+        notifier = WebhookNotifier(config)
+        summarizer = DailySummarizer(
+            profile_names={
+                "work-radar": {"default": "Work Radar"},
+                "personal-radar": {"default": "Personal Radar"},
+            },
+            profile_order=["work-radar", "personal-radar"],
+        )
+        work = _make_item(title="Work tool", url="https://example.com/work")
+        work.profile = "work-radar"
+        work.processing.classification.profile = "work-radar"
+        personal = _make_item(
+            title="Personal tool", url="https://example.com/personal"
+        )
+        personal.profile = "personal-radar"
+        personal.processing.classification.profile = "personal-radar"
+
+        messages = notifier.build_daily_summary_messages(
+            summary="# Full summary with details",
+            important_items=[work, personal],
+            all_items_count=50,
+            date="2026-11-18",
+            lang="en",
+            summarizer=summarizer,
+        )
+
+        assert [message["item_profile"] for message in messages] == [
+            "work-radar",
+            "personal-radar",
+        ]
+        assert all(
+            message["message_kind"] == "profile_overview" for message in messages
+        )
+        assert "[Work tool](https://example.com/work)" in messages[0]["summary"]
+        assert "[Personal tool](https://example.com/personal)" in messages[1]["summary"]
+        assert "Full summary with details" not in "".join(
+            message["summary"] for message in messages
+        )
+        del os.environ[_TEST_URL_ENV]
+
+    def test_profile_overviews_paginates_without_dropping_items(self):
+        os.environ[_TEST_URL_ENV] = _TEST_URL
+        config = WebhookConfig(
+            enabled=True,
+            url_env=_TEST_URL_ENV,
+            delivery="profile_overviews",
+            platform="telegram",
+            profile_message_char_limit=512,
+        )
+        notifier = WebhookNotifier(config)
+        summarizer = DailySummarizer(
+            profile_names={"work-radar": {"default": "Work Radar"}}
+        )
+        items = []
+        for index in range(1, 7):
+            item = _make_item(
+                title=f"Work item {index} " + ("long title " * 12),
+                url=f"https://example.com/work-{index}",
+            )
+            item.profile = "work-radar"
+            item.processing.classification.profile = "work-radar"
+            items.append(item)
+
+        messages = notifier.build_daily_summary_messages(
+            summary="# Full summary",
+            important_items=items,
+            all_items_count=50,
+            date="2026-11-18",
+            lang="en",
+            summarizer=summarizer,
+        )
+
+        assert len(messages) > 1
+        combined = "\n".join(message["summary"] for message in messages)
+        for index in range(1, 7):
+            assert f"Work item {index}" in combined
+        assert [message["profile_page"] for message in messages] == list(
+            range(1, len(messages) + 1)
+        )
+        assert all(
+            message["profile_page_count"] == len(messages) for message in messages
+        )
+        assert all(
+            _rendered_message_length(message["summary"], "telegram") <= 512
+            for message in messages
+        )
         del os.environ[_TEST_URL_ENV]
 
     def test_summary_and_items_overview_last_sends_reversed_items_then_overview(self):
@@ -1826,16 +1924,21 @@ class TestWebhookConfigFieldValidation:
         with pytest.raises(ValidationError, match="overview_position"):
             WebhookConfig(enabled=True, overview_position="middle")
 
+    @pytest.mark.parametrize("limit", [511, 4097])
+    def test_invalid_profile_message_char_limit_raises_validation_error(self, limit):
+        with pytest.raises(ValidationError, match="profile_message_char_limit"):
+            WebhookConfig(enabled=True, profile_message_char_limit=limit)
+
     def test_all_valid_values_pass(self):
         config = WebhookConfig(
             enabled=True,
-            delivery="summary_and_items",
+            delivery="profile_overviews",
             platform="feishu",
             layout="collapsible",
             fallback_layout="markdown",
             overview_position="last",
         )
-        assert config.delivery == "summary_and_items"
+        assert config.delivery == "profile_overviews"
         assert config.platform == "feishu"
         assert config.layout == "collapsible"
         assert config.fallback_layout == "markdown"
