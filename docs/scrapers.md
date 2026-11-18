@@ -108,6 +108,33 @@ limits. `personalized_discovery` requires authentication and a token with
 read-only access to the user's Watching and Starring lists. It ignores private
 repositories and does not modify subscriptions or stars.
 
+## LinkedIn manual inbox
+
+**File**: `src/scrapers/linkedin.py`
+
+LinkedIn discovery is an operator-curated intake rather than a LinkedIn web
+scraper. Horizon polls Telegram Bot API updates and accepts only messages that:
+
+- come from an explicitly allow-listed private chat or channel;
+- contain a `linkedin.com` or `lnkd.in` URL;
+- fall within the current collection window.
+
+```json
+{
+  "enabled": true,
+  "bot_token_env": "TELEGRAM_BOT_TOKEN",
+  "allowed_chat_ids": [123456789],
+  "state_path": "data/linkedin_telegram_offset.json",
+  "fetch_limit": 100,
+  "category": "linkedin-inbox",
+  "profile": ["work-radar", "personal-radar"]
+}
+```
+
+The adapter advances a small persistent Telegram update offset after a valid API
+response, including ignored messages, so one bot must have only one polling
+consumer. It never reads LinkedIn cookies, sessions, or account credentials.
+
 ## RSS
 
 **File**: `src/scrapers/rss.py`

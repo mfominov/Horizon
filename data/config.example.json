@@ -207,6 +207,15 @@
       "session_path": "data/telegram_user.session",
       "channels": []
     },
+    "linkedin": {
+      "enabled": false,
+      "bot_token_env": "TELEGRAM_BOT_TOKEN",
+      "allowed_chat_ids": [],
+      "state_path": "data/linkedin_telegram_offset.json",
+      "fetch_limit": 100,
+      "category": "linkedin-inbox",
+      "profile": "tech-news"
+    },
     "gdelt": {
       "enabled": false,
       "query": "artificial intelligence",

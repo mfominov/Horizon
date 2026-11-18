@@ -177,6 +177,10 @@ def test_mcp_filter_and_reporting_support_every_registered_source() -> None:
                         "enabled": True,
                         "channels": [{"channel": "private_updates"}],
                     },
+                "linkedin": {
+                    "enabled": True,
+                    "allowed_chat_ids": [12345],
+                },
                 "twitter": {"enabled": True, "users": ["openai"]},
                 "openbb": {"enabled": True, "watchlists": [{"name": "tech", "symbols": ["NVDA"]}]},
                 "ossinsight": {"enabled": True},

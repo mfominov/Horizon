@@ -622,6 +622,42 @@ The `.session` file is a login credential. Keep it out of Git, images, backups s
 - `channels[].fetch_limit` — maximum recent messages inspected per run
 - `channels[].profile` — one radar, both radars, or `"auto"`
 
+#### LinkedIn manual inbox
+
+LinkedIn does not provide a self-service API for reading a member's home feed.
+Horizon therefore supports an explicit intake queue instead of logging in to or
+scraping LinkedIn: send a LinkedIn post URL to a dedicated Telegram bot chat,
+and Horizon will score that link through the normal profile pipeline.
+
+```json
+{
+  "sources": {
+    "linkedin": {
+      "enabled": true,
+      "bot_token_env": "TELEGRAM_BOT_TOKEN",
+      "allowed_chat_ids": [123456789],
+      "state_path": "data/linkedin_telegram_offset.json",
+      "fetch_limit": 100,
+      "category": "linkedin-inbox",
+      "profile": ["work-radar", "personal-radar"]
+    }
+  }
+}
+```
+
+Start the bot chat once and send it LinkedIn URLs using Telegram's share
+action. Only messages from `allowed_chat_ids` are accepted, and messages without
+a `linkedin.com` or `lnkd.in` URL are ignored. The bot token is read from the
+environment variable named by `bot_token_env`; never put its value in the JSON
+configuration.
+
+The source uses Telegram Bot API `getUpdates`, so the same bot must not have a
+webhook configured and must not be consumed by another long-polling process.
+Horizon persists only the next Telegram update offset in `state_path`; the file
+contains neither the bot token nor message text. Keep it in the persistent data
+directory so restarts do not replay the queue. Telegram transports this manual
+capture only—Horizon never requests LinkedIn pages with account credentials.
+
 ### Twitter
 
 Requires an [Apify](https://apify.com) account. Set `APIFY_TOKEN` in your `.env` file. The free tier includes $5/month of credit, enough for roughly 20,000 tweets.

@@ -16,3 +16,5 @@ def test_configure_logging_forces_shared_console(monkeypatch):
     assert calls[0]["force"] is True
     assert calls[0]["level"] == logging.WARNING
     assert calls[0]["handlers"][0].console is console
+    assert logging.getLogger("httpx").level == logging.WARNING
+    assert logging.getLogger("httpcore").level == logging.WARNING
