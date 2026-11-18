@@ -24,6 +24,7 @@ from .scrapers.rss import RSSScraper
 from .scrapers.reddit import RedditScraper
 from .scrapers.telegram import TelegramScraper
 from .scrapers.telegram_user import TelegramUserScraper
+from .scrapers.linkedin import LinkedInInboxScraper
 from .scrapers.twitter import TwitterScraper
 from .scrapers.twitter_playwright import TwitterPlaywrightScraper
 from .scrapers.openbb import OpenBBScraper
@@ -495,6 +496,16 @@ class HorizonOrchestrator:
                 tasks.append(
                     self._fetch_with_progress(
                         "Telegram User", telegram_user_scraper, since
+                    )
+                )
+
+            # LinkedIn links explicitly shared with an allow-listed Telegram bot.
+            linkedin_config = getattr(self.config.sources, "linkedin", None)
+            if linkedin_config and linkedin_config.enabled:
+                linkedin_scraper = LinkedInInboxScraper(linkedin_config, client)
+                tasks.append(
+                    self._fetch_with_progress(
+                        "LinkedIn Inbox", linkedin_scraper, since
                     )
                 )
 

@@ -14,3 +14,8 @@ def configure_logging(console: Console, level: int | str = logging.WARNING) -> N
         handlers=[RichHandler(console=console, show_path=False)],
         force=True,
     )
+    # httpx logs complete request URLs at INFO. Some APIs, including Telegram
+    # Bot API, carry credentials in the URL path, so keep transport logs quiet
+    # even when Horizon itself runs at INFO.
+    logging.getLogger("httpx").setLevel(logging.WARNING)
+    logging.getLogger("httpcore").setLevel(logging.WARNING)

@@ -16,6 +16,7 @@ class SourceType(str, Enum):
     REDDIT = "reddit"
     TELEGRAM = "telegram"
     TELEGRAM_USER = "telegram_user"
+    LINKEDIN = "linkedin"
     TWITTER = "twitter"
     OPENBB = "openbb"
     OSSINSIGHT = "ossinsight"
@@ -42,6 +43,7 @@ SOURCE_REGISTRY = {
     SourceType.TELEGRAM_USER.value: SourceDefinition(
         "telegram_user", item_fields=("channels",)
     ),
+    SourceType.LINKEDIN.value: SourceDefinition("linkedin"),
     SourceType.TWITTER.value: SourceDefinition("twitter", item_fields=("users", "keywords")),
     SourceType.OPENBB.value: SourceDefinition("openbb", item_fields=("watchlists",)),
     SourceType.OSSINSIGHT.value: SourceDefinition("ossinsight"),
@@ -439,6 +441,35 @@ class TelegramUserConfig(BaseModel):
     channels: List[TelegramUserChannelConfig] = Field(default_factory=list)
 
 
+class LinkedInInboxConfig(BaseModel):
+    """Manual LinkedIn intake through an allow-listed Telegram bot chat.
+
+    LinkedIn does not expose the authenticated member's home feed through its
+    self-service API. This source therefore accepts only LinkedIn URLs that a
+    user explicitly sends to a Telegram bot; it never logs in to or scrapes
+    linkedin.com.
+    """
+
+    enabled: bool = False
+    bot_token_env: str = Field(
+        default="TELEGRAM_BOT_TOKEN",
+        pattern=r"^[A-Za-z_][A-Za-z0-9_]*$",
+    )
+    allowed_chat_ids: List[int] = Field(default_factory=list)
+    state_path: str = "data/linkedin_telegram_offset.json"
+    fetch_limit: int = Field(default=100, ge=1, le=100)
+    category: Optional[str] = "linkedin-inbox"
+    profile: ProfileRoute = None
+
+    @model_validator(mode="after")
+    def validate_enabled_inbox(self) -> "LinkedInInboxConfig":
+        if self.enabled and not self.allowed_chat_ids:
+            raise ValueError("enabled LinkedIn inbox requires at least one allowed_chat_id")
+        if not self.state_path.strip():
+            raise ValueError("LinkedIn inbox state_path must not be empty")
+        return self
+
+
 class TwitterConfig(BaseModel):
     """Twitter source configuration.
 
@@ -573,6 +604,7 @@ class SourcesConfig(BaseModel):
     reddit: RedditConfig = Field(default_factory=RedditConfig)
     telegram: TelegramConfig = Field(default_factory=TelegramConfig)
     telegram_user: Optional[TelegramUserConfig] = None
+    linkedin: Optional[LinkedInInboxConfig] = None
     twitter: Optional[TwitterConfig] = None
     openbb: Optional[OpenBBConfig] = None
     ossinsight: OSSInsightConfig = Field(default_factory=OSSInsightConfig)
