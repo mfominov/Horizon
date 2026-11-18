@@ -998,7 +998,9 @@ Webhook notification is optional and disabled unless `webhook.enabled` is `true`
 - `url_env`: Environment variable that contains the webhook URL. For example, set `HORIZON_WEBHOOK_URL=https://...` in `.env`.
 - `delivery`: Controls how messages are sent. Use `summary` for one full message, or `summary_and_items` for one overview message followed by one message per selected item.
 - `overview_position`: Controls where the overview is sent in `summary_and_items` mode. Use `first` for the traditional order, or `last` to send item details in reverse and keep the overview as the newest chat message.
-- `platform`: Optional webhook platform hint. Use `generic` by default, or `feishu` / `lark` to enable platform-specific card rendering.
+- `platform`: Optional webhook platform hint. Use `generic` by default,
+  `telegram` to convert Horizon Markdown to Telegram-safe HTML, or
+  `feishu` / `lark` to enable platform-specific card rendering.
 - `layout`: Controls the message layout. Use `markdown` for templated Markdown delivery, or `collapsible` with `platform: "feishu"` / `"lark"` for a single Feishu Card JSON 2.0 message with each item in a collapsed panel.
 - `fallback_layout`: Reserved fallback layout for unsupported platform/layout combinations. The current safe fallback is `markdown`.
 - `languages`: Optional webhook-only language filter. Use `["zh"]` or `["en"]` to send only selected languages; use `null` or omit it to send all configured `ai.languages`.
@@ -1020,6 +1022,12 @@ When `request_body` is a JSON object or array, Horizon renders placeholders and 
 - `collapsible`: Currently supported for `platform: "feishu"` or `"lark"`. Horizon ignores `request_body` and builds one Feishu/Lark Card JSON 2.0 message with each item in a collapsed panel.
 
 For platforms without a platform-specific layout, keep `layout: "markdown"` and choose the message count with `delivery`.
+
+For Telegram Bot API `sendMessage`, set `platform: "telegram"` and keep
+`request_body` as a JSON object. Horizon converts headings, emphasis, links,
+quotes, and lists to Telegram's supported HTML subset and adds
+`parse_mode: "HTML"` automatically. Internal Markdown anchor links are rendered
+as plain text because Telegram messages do not support document anchors.
 
 Example `summary_and_items` Markdown delivery config:
 
