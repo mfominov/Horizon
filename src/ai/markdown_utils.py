@@ -93,11 +93,18 @@ def _convert_details_to_markdown(value: str) -> str:
     return _DETAILS_RE.sub(_replace, value)
 
 
-def clean_app_summary_markdown(value: str) -> str:
+def clean_app_summary_markdown(
+    value: str,
+    *,
+    remove_anchor_ids: bool = True,
+) -> str:
     """Flatten app-generated HTML snippets embedded in summary Markdown.
 
     Unknown raw HTML is intentionally left in place so callers can choose their
     own safety boundary. Email, for example, escapes after this cleanup step.
+    Telegram can retain anchor IDs temporarily to map its table of contents to
+    the corresponding public source URLs.
     """
-    value = _ANCHOR_ID_RE.sub("", value)
+    if remove_anchor_ids:
+        value = _ANCHOR_ID_RE.sub("", value)
     return _convert_details_to_markdown(value)
