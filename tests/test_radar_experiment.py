@@ -18,7 +18,7 @@ def load_radar_config(monkeypatch) -> Config:
     return Config.model_validate(_expand_env_vars(raw))
 
 
-def test_radar_config_uses_openrouter_and_two_explicit_profiles(monkeypatch):
+def test_radar_config_uses_openrouter_and_three_explicit_profiles(monkeypatch):
     config = load_radar_config(monkeypatch)
     registry = ProfileRegistry.load(ROOT / "profiles", config.processing.default_profile)
 
@@ -26,16 +26,28 @@ def test_radar_config_uses_openrouter_and_two_explicit_profiles(monkeypatch):
     assert config.ai.base_url == "https://openrouter.ai/api/v1"
     assert config.ai.api_key_env == "OPENROUTER_API_KEY"
     assert config.digest.group_by == "profile"
-    assert config.digest.profile_order == ["work-radar", "personal-radar"]
+    assert config.digest.profile_order == [
+        "work-radar",
+        "personal-radar",
+        "security-radar",
+    ]
     assert registry.get("work-radar").analysis_prompt
     assert registry.get("personal-radar").analysis_prompt
+    assert registry.get("security-radar").analysis_prompt
     registry.validate_source_references(config.sources.model_dump(mode="json"))
 
 
-def test_every_experiment_source_is_routed_to_both_radars(monkeypatch):
+def test_experiment_routes_shared_and_security_sources(monkeypatch):
     config = load_radar_config(monkeypatch)
 
-    expected_profiles = {"work-radar", "personal-radar"}
+    shared_profiles = {"work-radar", "personal-radar"}
+    all_profiles = {"work-radar", "personal-radar", "security-radar"}
+    security_feed_urls = {
+        "https://www.cisa.gov/cybersecurity-advisories/all.xml",
+        "https://ubuntu.com/security/notices/rss.xml",
+        "https://github.blog/security/feed/",
+        "https://googleprojectzero.blogspot.com/feeds/posts/default",
+    }
 
     def route_profiles(route):
         return set(route) if isinstance(route, list) else {route}
@@ -79,21 +91,26 @@ def test_every_experiment_source_is_routed_to_both_radars(monkeypatch):
         "https://www.cncf.io/feed/",
         "https://grafana.com/blog/index.xml",
         "https://blog.cloudflare.com/rss/",
-    }
+    } | security_feed_urls
     assert set(telegram_routes) == {"devops_fm"}
     assert set(reddit_routes) == {"devops", "selfhosted"}
-    assert all(route == expected_profiles for route in github_routes.values())
-    assert all(route == expected_profiles for route in rss_routes.values())
-    assert all(route == expected_profiles for route in telegram_routes.values())
-    assert all(route == expected_profiles for route in reddit_routes.values())
+    assert all(route == shared_profiles for route in github_routes.values())
+    assert all(
+        route == shared_profiles
+        for url, route in rss_routes.items()
+        if url not in security_feed_urls
+    )
+    assert all(rss_routes[url] == {"security-radar"} for url in security_feed_urls)
+    assert all(route == shared_profiles for route in telegram_routes.values())
+    assert all(route == shared_profiles for route in reddit_routes.values())
     assert github_discovery is not None
-    assert route_profiles(github_discovery.profile) == expected_profiles
+    assert route_profiles(github_discovery.profile) == all_profiles
     assert github_discovery.seed_sources == ["watched", "starred"]
     assert github_discovery.max_search_queries <= 10
     assert github_discovery.fan_out_profiles is True
-    assert route_profiles(config.sources.hackernews.profile) == expected_profiles
-    assert route_profiles(config.sources.ossinsight.profile) == expected_profiles
-    assert route_profiles(config.sources.google_news.profile) == expected_profiles
+    assert route_profiles(config.sources.hackernews.profile) == shared_profiles
+    assert route_profiles(config.sources.ossinsight.profile) == shared_profiles
+    assert route_profiles(config.sources.google_news.profile) == shared_profiles
 
 
 def test_cross_source_dedup_keeps_same_url_for_independent_radars():
@@ -107,9 +124,14 @@ def test_cross_source_dedup_keeps_same_url_for_independent_radars():
     items = [
         ContentItem(id="work", profile="work-radar", **base),
         ContentItem(id="personal", profile="personal-radar", **base),
+        ContentItem(id="security", profile="security-radar", **base),
     ]
     orchestrator = object.__new__(HorizonOrchestrator)
 
     result = orchestrator.merge_cross_source_duplicates(items)
 
-    assert [item.profile for item in result] == ["work-radar", "personal-radar"]
+    assert [item.profile for item in result] == [
+        "work-radar",
+        "personal-radar",
+        "security-radar",
+    ]

@@ -274,6 +274,7 @@ def test_appends_profiles_missing_from_configured_order() -> None:
         "ai-creator",
         "finance-news",
         "personal-radar",
+        "security-radar",
         "work-radar",
     ]
 
