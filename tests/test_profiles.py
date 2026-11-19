@@ -15,7 +15,14 @@ def test_loads_builtin_profiles():
         Path(__file__).resolve().parents[1] / "profiles", "tech-news"
     )
 
-    for profile_id in ("tech-news", "tech-blog", "finance-news"):
+    for profile_id in (
+        "tech-news",
+        "tech-blog",
+        "finance-news",
+        "work-radar",
+        "personal-radar",
+        "security-radar",
+    ):
         profile = registry.get(profile_id)
         assert profile.match_prompt
         assert profile.analysis_prompt
@@ -33,6 +40,15 @@ def test_loads_builtin_profiles():
     )
     assert tech_impact.optional is True
     assert finance_impact.optional is True
+
+    security = registry.get("security-radar")
+    security_blocks = {
+        block.id: block for block in security.definition.enrichment.blocks
+    }
+    assert list(security_blocks) == ["summary", "exposure", "action", "unknowns"]
+    assert security_blocks["summary"].primary is True
+    assert security_blocks["unknowns"].optional is True
+    assert "CVE" in security.analysis_prompt
 
 
 @pytest.mark.parametrize(

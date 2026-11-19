@@ -1054,8 +1054,9 @@ class TestSendDailySummary:
             profile_names={
                 "work-radar": {"default": "Work Radar"},
                 "personal-radar": {"default": "Personal Radar"},
+                "security-radar": {"default": "Security Radar"},
             },
-            profile_order=["work-radar", "personal-radar"],
+            profile_order=["work-radar", "personal-radar", "security-radar"],
         )
         work = _make_item(title="Work tool", url="https://example.com/work")
         work.profile = "work-radar"
@@ -1065,10 +1066,15 @@ class TestSendDailySummary:
         )
         personal.profile = "personal-radar"
         personal.processing.classification.profile = "personal-radar"
+        security = _make_item(
+            title="CVE advisory", url="https://example.com/security"
+        )
+        security.profile = "security-radar"
+        security.processing.classification.profile = "security-radar"
 
         messages = notifier.build_daily_summary_messages(
             summary="# Full summary with details",
-            important_items=[work, personal],
+            important_items=[work, personal, security],
             all_items_count=50,
             date="2026-11-18",
             lang="en",
@@ -1078,6 +1084,7 @@ class TestSendDailySummary:
         assert [message["item_profile"] for message in messages] == [
             "work-radar",
             "personal-radar",
+            "security-radar",
         ]
         assert all(
             message["message_kind"] == "profile_overview" for message in messages
@@ -1089,6 +1096,10 @@ class TestSendDailySummary:
         assert (
             "1. ⭐️ 8.0/10 — [Personal tool](https://example.com/personal)"
             in messages[1]["summary"]
+        )
+        assert (
+            "1. ⭐️ 8.0/10 — [CVE advisory](https://example.com/security)"
+            in messages[2]["summary"]
         )
         assert "Full summary with details" not in "".join(
             message["summary"] for message in messages

@@ -22,6 +22,10 @@
       "personal-radar": {
         "threshold": 0.0,
         "topic_dedup": false
+      },
+      "security-radar": {
+        "threshold": 0.0,
+        "topic_dedup": false
       }
     }
   },
@@ -101,7 +105,7 @@
         "exclude_archived": true,
         "fan_out_profiles": true,
         "category": "github-discovery",
-        "profile": ["work-radar", "personal-radar"]
+        "profile": ["work-radar", "personal-radar", "security-radar"]
       }
     ],
     "hackernews": {
@@ -160,6 +164,34 @@
         "enabled": true,
         "category": "infrastructure",
         "profile": ["work-radar", "personal-radar"]
+      },
+      {
+        "name": "CISA Cybersecurity Advisories",
+        "url": "https://www.cisa.gov/cybersecurity-advisories/all.xml",
+        "enabled": true,
+        "category": "security-advisory",
+        "profile": "security-radar"
+      },
+      {
+        "name": "Ubuntu Security Notices",
+        "url": "https://ubuntu.com/security/notices/rss.xml",
+        "enabled": true,
+        "category": "cve",
+        "profile": "security-radar"
+      },
+      {
+        "name": "GitHub Security",
+        "url": "https://github.blog/security/feed/",
+        "enabled": true,
+        "category": "software-supply-chain-security",
+        "profile": "security-radar"
+      },
+      {
+        "name": "Google Project Zero",
+        "url": "https://googleprojectzero.blogspot.com/feeds/posts/default",
+        "enabled": true,
+        "category": "vulnerability-research",
+        "profile": "security-radar"
       }
     ],
     "reddit": {
@@ -247,7 +279,7 @@
   "digest": {
     "max_items": null,
     "group_by": "profile",
-    "profile_order": ["work-radar", "personal-radar"],
+    "profile_order": ["work-radar", "personal-radar", "security-radar"],
     "category_groups": {},
     "default_group": "other",
     "default_group_limit": null
